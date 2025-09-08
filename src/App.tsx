@@ -4,6 +4,7 @@ import { Input } from "@/components/ui/input"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { X, Plus, Calculator } from "lucide-react"
+import PropagacionErrores from "./components/PropagacionErrores"
 
 interface Term {
   id: string
@@ -14,7 +15,7 @@ interface Term {
 }
 
 export default function App() {
-  const [terms, setTerms] = useState<Term[]>([{ id: "1", value: 3.2, error: 0.5, unit: "cm", operation: "+" }])
+  const [terms, setTerms] = useState<Term[]>([])
   const [newValue, setNewValue] = useState("")
   const [newError, setNewError] = useState("")
   const [newUnit, setNewUnit] = useState("cm")
@@ -69,7 +70,8 @@ export default function App() {
 
   return (
     <div className="min-h-screen bg-background p-4">
-      <div className="max-w-4xl mx-auto space-y-6">
+      <PropagacionErrores />
+      <div className="max-w-4xl mx-auto space-y-6 mt-14">
         <div className="text-center space-y-2">
           <h1 className="text-3xl font-bold text-foreground">Simulador de Propagación de Errores</h1>
           <p className="text-muted-foreground">Suma y resta con propagación de errores</p>
@@ -111,7 +113,7 @@ export default function App() {
               </div>
               <div>
                 <label className="text-sm font-medium">Operación</label>
-                <Select value={newOperation} onValueChange={(value: "+" | "-") => setNewOperation(value)}>
+                <Select value={newOperation} onValueChange={(value: "+" | "-") => setNewOperation(value)} >
                   <SelectTrigger>
                     <SelectValue />
                   </SelectTrigger>
@@ -130,49 +132,57 @@ export default function App() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Términos de la Operación</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="flex flex-wrap items-center gap-2">
-              {terms.map((term, index) => (
-                <div key={term.id} className="flex items-center gap-2">
-                  {index > 0 && (
-                    <Select
-                      value={term.operation}
-                      onValueChange={(value: "+" | "-") => updateTermOperation(term.id, value)}
-                    >
-                      <SelectTrigger className="w-12 h-8">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="+">+</SelectItem>
-                        <SelectItem value="-">-</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  )}
+        {terms.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Términos de la Operación</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="flex flex-wrap items-center gap-2">
+                {terms.map((term, index) => {
+                  console.log("term");
+                  console.log(term);
 
-                  <div className="flex items-center gap-1 bg-muted px-3 py-2 rounded-lg">
-                    <span className="font-mono text-sm">
-                      [{term.value} {term.unit} ± {term.error} {term.unit}]
-                    </span>
+                  return (
+                    <div key={term.id} className="flex items-center gap-2">
+                      {index > 0 && (
+                        <Select
+                          key={term.id}
+                          value={term.operation === "+" ? "+" : "-"}
+                          onValueChange={(value: "+" | "-") => updateTermOperation(term.id, value)}
+                        >
+                          <SelectTrigger className="w-12 h-8">
+                            <p className="font-semibold">{term.operation}</p>
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="+">+</SelectItem>
+                            <SelectItem value="-">-</SelectItem>
+                          </SelectContent>
+                        </Select>
+                      )}
 
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => removeTerm(term.id)}
-                      disabled={terms.length === 1}
-                      className="h-6 w-6 p-0 ml-2 hover:bg-destructive hover:text-destructive-foreground"
-                    >
-                      <X className="w-3 h-3" />
-                    </Button>
-                  </div>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
+                      <div className="flex items-center gap-1 bg-muted px-3 py-2 rounded-lg">
+                        <span className="font-mono text-sm">
+                          [{term.value} {term.unit} ± {term.error} {term.unit}]
+                        </span>
+
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => removeTerm(term.id)}
+                          disabled={terms.length === 1}
+                          className="h-6 w-6 p-0 ml-2 hover:bg-destructive hover:text-destructive-foreground"
+                        >
+                          <X className="w-3 h-3" />
+                        </Button>
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Resultado */}
         <Card className="border-2 border-primary">
@@ -185,27 +195,27 @@ export default function App() {
           <CardContent>
             <div className="text-center space-y-4">
               <div className="text-2xl font-mono font-bold">
-                [{result.value.toFixed(1)} {result.unit} ± {result.error.toFixed(1)} {result.unit}]
+                [{result.value.toFixed(1)} {result.unit} ± {result.error.toFixed(3)}{result.unit ? ` ${result.unit}` : ""}]
               </div>
 
               <div className="text-sm text-muted-foreground space-y-2">
                 <p>
-                  <strong>Valor:</strong> {result.value.toFixed(3)} {result.unit}
+                  <strong>Valor:</strong> {result.value.toFixed(3)}{result.unit ? ` ${result.unit}` : ""}
                 </p>
                 <p>
                   <strong>Error absoluto:</strong> ±{result.error.toFixed(3)} {result.unit}
                 </p>
                 <p>
-                  <strong>Error relativo:</strong> ±
+                  <strong>Error porcentual: </strong>
                   {result.value !== 0 ? ((result.error / Math.abs(result.value)) * 100).toFixed(2) : "0"}%
                 </p>
               </div>
 
               <div className="text-xs text-muted-foreground bg-muted p-3 rounded">
                 <p>
-                  <strong>Fórmula de propagación:</strong>
+                  <strong>Error de propagación:</strong>
                 </p>
-                <p>Para suma y resta: δR = δA + δB + δC + ...</p>
+                <p>Para suma y resta: ΔZ = ΔX + ΔY + ...</p>
               </div>
             </div>
           </CardContent>
